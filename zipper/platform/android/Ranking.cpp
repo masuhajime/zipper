@@ -1,3 +1,5 @@
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+
 #include "zipper/Ranking.h"
 #include <jni.h>
 #include "cocos2d.h"
@@ -46,3 +48,5 @@ namespace ranking {
      */
 
 }/* zipper */
+
+#endif
