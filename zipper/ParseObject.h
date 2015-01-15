@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "cocos2d.h"
 #include "picojson.h"
 
@@ -12,11 +12,12 @@ namespace zipper
     class ParseObject
     {
     private:
-        std::map<std::string, std::string> datas;
+        std::unordered_map<std::string, cocos2d::Value> data;
     public:
-        
+        bool has(const std::string& key);
+        cocos2d::Value* get(const std::string& key);
+        void set(const std::string& key, cocos2d::Value value);
     };
-    
 
 } // namespace zipper
 

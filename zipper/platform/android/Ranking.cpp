@@ -1,4 +1,4 @@
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+#if FALSE
 
 #include "zipper/Ranking.h"
 #include <jni.h>

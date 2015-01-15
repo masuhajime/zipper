@@ -27,24 +27,34 @@ namespace zipper
         return h;
     }
     
-    bool ParseClass::getScoreObjectId(const std::string objectId) {
-        
+    bool ParseClass::getScoreObjectId(const std::string objectId, const ccHttpRequestCallback &callback) {
         // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
         // 404: {"code":101,"error":"object not found for get"}
+        auto url = string("https://api.parse.com/1/classes/") + class_name + "/" + objectId;
+        auto request = new HttpRequest();
+        request->setUrl(url.c_str());
+        request->setHeaders(getParseHeader(false));
+        request->setRequestType(HttpRequest::Type::GET);
+        request->setResponseCallback(callback);
+        auto client = HttpClient::getInstance();
+        client->enableCookies(NULL);
+        client->send(request);
         return true;
     }
     
     bool ParseClass::postData(const std::string objectId, const char* buffer) {
-        auto r = new HttpRequest();
         auto url = string("https://api.parse.com/1/classes/") + class_name;
-        r->setUrl(url.c_str());
-        r->setHeaders(getParseHeader(true));
-        r->setRequestType(HttpRequest::Type::POST);
+        auto request = new HttpRequest();
+        request->setUrl(url.c_str());
+        request->setHeaders(getParseHeader(true));
+        request->setRequestType(HttpRequest::Type::POST);
+        HttpClient::getInstance()->send(request);
+        //httpRequest->setResponseCallback();
         // TODO: これを外から利用する
         // picojson::object json
         // picojson::value val(json);
         // const char* buffer = val.serialize().c_str();
-        r->setRequestData(buffer, strlen(buffer));
+        request->setRequestData(buffer, strlen(buffer));
         
         return true;
     }

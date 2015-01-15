@@ -3,14 +3,15 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "cocos2d.h"
 #include "picojson.h"
+#include "network/HttpClient.h"
 
 namespace zipper
 {
     /**
-     * 一見、Classという命名は抽象的すぎるのでは？と思うかもしれないが、ParseではClassというデータ構造のようだ
+     * 一見、Classという命名は抽象的すぎるのでは？と思うかもしれないが、Parse.comではClassというデータ構造のようだ
      */
     class ParseClass
     {
@@ -19,9 +20,10 @@ namespace zipper
         std::string rest_api_key;
         std::string class_name;
     public:
+        // std::vector<std::unordered_map<std::string, cocos2d::Value>>
         ParseClass(const std::string class_name, const std::string application_id, const std::string rest_api_key);
-        std::vector<std::map<std::string, std::string>> postData(const std::string objectId, const char* buffer);
-        bool getScoreObjectId(const std::string objectId);
+        bool postData(const std::string objectId, const char* buffer);
+        bool getScoreObjectId(const std::string objectId, const cocos2d::network::ccHttpRequestCallback &callback);
     private:
         std::vector<std::string> getParseHeader(bool withdata = true);
     };
