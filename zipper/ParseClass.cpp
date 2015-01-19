@@ -1,5 +1,6 @@
 #include "ParseClass.h"
 #include <vector>
+#include <unordered_map>
 #include <iostream>
 #include "network/HttpClient.h"
 
@@ -41,6 +42,29 @@ namespace zipper
         client->send(request);
         return true;
     }
+    
+    std::unordered_map<std::string, cocos2d::Value> ParseClass::getObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
+        if (!response->isSucceed()) {
+            throw 1;
+        }
+        std::vector<char> *buffer = response->getResponseData();
+        std::string json_body = std::string(buffer->begin(), buffer->end());
+        
+        
+        CCLOG("%s", json_body.c_str());
+        
+        picojson::value v;
+        std::string err = picojson::parse(v, json_body);
+        if (!err.empty()) {
+            std:cerr << err << std::endl;
+        }
+        
+        CCLOG("%s", v.to_str().c_str());
+        
+        return std::unordered_map<std::string, cocos2d::Value>();
+        //return new std::unor
+    }
+    
     
     bool ParseClass::postData(const std::string objectId, const char* buffer) {
         auto url = string("https://api.parse.com/1/classes/") + class_name;
