@@ -1,5 +1,5 @@
-#ifndef ZIPPER_PARSECLASS_H
-#define ZIPPER_PARSECLASS_H
+#ifndef ZIPPER_PARSEOBJECT_H
+#define ZIPPER_PARSEOBJECT_H
 
 #include <string>
 #include <vector>
@@ -15,10 +15,13 @@ namespace zipper
         std::unordered_map<std::string, cocos2d::Value> data;
     public:
         bool has(const std::string& key);
-        cocos2d::Value* get(const std::string& key);
+        const cocos2d::Value* get(const std::string& key);
+        const double asDouble(const std::string& key);
+        const std::string asString(const std::string& key);
+        const bool asBool(const std::string& key);
         void set(const std::string& key, cocos2d::Value value);
     };
 
 } // namespace zipper
 
-#endif /* ZIPPER_PARSECLASS_H */
+#endif /* ZIPPER_PARSEOBJECT_H */

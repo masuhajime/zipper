@@ -43,26 +43,34 @@ namespace zipper
         return true;
     }
     
-    std::unordered_map<std::string, cocos2d::Value> ParseClass::getObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
+    zipper::ParseObject ParseClass::getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
         if (!response->isSucceed()) {
-            throw 1;
+            throw 1;// ここひどいのでなんとかする
         }
         std::vector<char> *buffer = response->getResponseData();
         std::string json_body = std::string(buffer->begin(), buffer->end());
         
-        
-        CCLOG("%s", json_body.c_str());
+        //CCLOG("%s", json_body.c_str());
         
         picojson::value v;
         std::string err = picojson::parse(v, json_body);
         if (!err.empty()) {
-            std:cerr << err << std::endl;
+            //std:cerr << err << std::endl;
+            throw 1;// ここひどいのでなんとかする
+        }
+        picojson::object& obj = v.get<picojson::object>();
+        zipper::ParseObject parse_object;
+        for (picojson::object::iterator it=obj.begin (); it != obj.end (); it++) {
+            if ((*it).second.is<double>()) {
+                parse_object.set((*it).first, cocos2d::Value((*it).second.get<double>()));
+            } else if ((*it).second.is<std::string>()) {
+                parse_object.set((*it).first, cocos2d::Value((*it).second.get<std::string>()));
+            } else if ((*it).second.is<bool>()) {
+                parse_object.set((*it).first, cocos2d::Value((*it).second.get<bool>()));
+            }
         }
         
-        CCLOG("%s", v.to_str().c_str());
-        
-        return std::unordered_map<std::string, cocos2d::Value>();
-        //return new std::unor
+        return parse_object;
     }
     
     
