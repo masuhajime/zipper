@@ -24,7 +24,7 @@ namespace zipper
     public:
         ParseClass(const std::string class_name, const std::string application_id, const std::string rest_api_key);
         bool postData(const std::string objectId, const char* buffer);
-        bool getScoreObjectId(const std::string objectId, const cocos2d::network::ccHttpRequestCallback &callback);
+        bool getObjectId(const std::string objectId, const cocos2d::network::ccHttpRequestCallback &callback);
         
         static ParseObject getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);
     private:

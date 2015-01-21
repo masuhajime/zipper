@@ -28,9 +28,7 @@ namespace zipper
         return h;
     }
     
-    bool ParseClass::getScoreObjectId(const std::string objectId, const ccHttpRequestCallback &callback) {
-        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
-        // 404: {"code":101,"error":"object not found for get"}
+    bool ParseClass::getObjectId(const std::string objectId, const ccHttpRequestCallback &callback) {
         auto url = string("https://api.parse.com/1/classes/") + class_name + "/" + objectId;
         auto request = new HttpRequest();
         request->setUrl(url.c_str());
@@ -58,6 +56,11 @@ namespace zipper
             //std:cerr << err << std::endl;
             throw 1;// ここひどいのでなんとかする
         }
+        
+        // TODO: 404 not found の時にエラーを出す
+        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
+        // 404: {"code":101,"error":"object not found for get"}
+        
         picojson::object& obj = v.get<picojson::object>();
         zipper::ParseObject parse_object;
         for (picojson::object::iterator it=obj.begin (); it != obj.end (); it++) {
