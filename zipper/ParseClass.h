@@ -25,8 +25,11 @@ namespace zipper
         ParseClass(const std::string class_name, const std::string application_id, const std::string rest_api_key);
         bool postData(const std::string objectId, const char* buffer);
         bool getObjectId(const std::string objectId, const cocos2d::network::ccHttpRequestCallback &callback);
+        bool getRanking(std::string sort_by, int limit, const cocos2d::network::ccHttpRequestCallback &callback);
         
+        // callback
         static ParseObject getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);
+        static std::vector<ParseObject> getParseObjectsFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);
     private:
         std::vector<std::string> getParseHeader(bool withdata = true);
     };
