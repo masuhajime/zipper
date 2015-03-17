@@ -18,12 +18,12 @@ namespace zipper
     
     vector<std::string> ParseClass::getParseHeader(bool withdata) {
         vector<string> h;
-        auto header_application_id = string("X-Parse-Application-Id: ") + application_id;
-        auto header_rest_api_key   = string("X-Parse-REST-API-Key: ") + rest_api_key;
+        auto header_application_id = string("X-Parse-Application-Id:") + application_id;
+        auto header_rest_api_key   = string("X-Parse-REST-API-Key:") + rest_api_key;
         h.push_back(header_application_id.c_str());
         h.push_back(header_rest_api_key.c_str());
         if (withdata) {
-            h.push_back("Content-Type: application/json");
+            h.push_back("Content-Type:application/json");
         }
         return h;
     }
@@ -36,8 +36,9 @@ namespace zipper
         request->setRequestType(HttpRequest::Type::GET);
         request->setResponseCallback(callback);
         auto client = HttpClient::getInstance();
-        client->enableCookies(NULL);
+        client->enableCookies("");
         client->send(request);
+        request->release();
         return true;
     }
     
