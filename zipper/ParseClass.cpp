@@ -30,6 +30,7 @@ namespace zipper
     
     bool ParseClass::getObjectId(const std::string objectId, const ccHttpRequestCallback &callback) {
         auto url = string("https://api.parse.com/1/classes/") + class_name + "/" + objectId;
+        //auto url = string("http://httpbin.org/delay/15");
         auto request = new HttpRequest();
         request->setUrl(url.c_str());
         request->setHeaders(getParseHeader(false));
@@ -37,6 +38,8 @@ namespace zipper
         request->setResponseCallback(callback);
         auto client = HttpClient::getInstance();
         client->enableCookies("");
+        client->setTimeoutForConnect(10);
+        client->setTimeoutForRead(10);
         client->send(request);
         request->release();
         return true;
@@ -55,29 +58,19 @@ namespace zipper
         return true;
     }
     
-    zipper::ParseObject ParseClass::getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
-        if (!response->isSucceed()) {
-            throw 1;// ここひどいのでなんとかする
-        }
-        std::vector<char> *buffer = response->getResponseData();
-        std::string json_body = std::string(buffer->begin(), buffer->end());
-        
-        //CCLOG("%s", json_body.c_str());
-        
-        picojson::value v;
-        std::string err = picojson::parse(v, json_body);
+    void ParseClass::parseJson(picojson::value &out, const std::string &s)
+    {
+        std::string err = picojson::parse(out, s);
         if (!err.empty()) {
-            //std:cerr << err << std::endl;
-            throw 1;// ここひどいのでなんとかする
+            throw 1;
+            // TODO:
+            // throw new unexpected_response;
         }
-        
-        // TODO: 404 not found の時にエラーを出す
-        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
-        // 404: {"code":101,"error":"object not found for get"}
-        
-        picojson::object& obj = v.get<picojson::object>();
-        zipper::ParseObject parse_object;
-        for (picojson::object::iterator it=obj.begin(); it != obj.end(); it++) {
+    }
+    
+    void ParseClass::parseObject(ParseObject &parse_object, picojson::object &object)
+    {
+        for (picojson::object::iterator it=object.begin(); it != object.end(); it++) {
             if ((*it).second.is<double>()) {
                 parse_object.set((*it).first, cocos2d::Value((*it).second.get<double>()));
             } else if ((*it).second.is<std::string>()) {
@@ -86,12 +79,36 @@ namespace zipper
                 parse_object.set((*it).first, cocos2d::Value((*it).second.get<bool>()));
             }
         }
+    }
+    
+    zipper::ParseObject ParseClass::getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
+        if (404 == response->getResponseCode()) {
+            throw notfound_error();
+        }
+        if (!response->isSucceed()) {
+            throw 1;// ここひどいのでなんとかする
+        }
+        std::vector<char> *buffer = response->getResponseData();
+        std::string json_body = std::string(buffer->begin(), buffer->end());
         
+        CCLOG("%d:%s", (int)response->getResponseCode(), json_body.c_str());
+        
+        picojson::value v;
+        ParseClass::parseJson(v, json_body);
+        
+        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
+        // 404: {"code":101,"error":"object not found for get"}
+        
+        zipper::ParseObject parse_object;
+        picojson::object& object = v.get<picojson::object>();
+        ParseClass::parseObject(parse_object, object);
         return parse_object;
     }
     
     std::vector<ParseObject> ParseClass::getParseObjectsFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
-        
+        if (404 == response->getResponseCode()) {
+            throw notfound_error();
+        }
         if (!response->isSucceed()) {
             throw 1;// ここひどいのでなんとかする
         }
@@ -101,13 +118,8 @@ namespace zipper
         //CCLOG("%s", json_body.c_str());
         
         picojson::value v;
-        std::string err = picojson::parse(v, json_body);
-        if (!err.empty()) {
-            //std:cerr << err << std::endl;
-            throw 1;// ここひどいのでなんとかする
-        }
+        ParseClass::parseJson(v, json_body);
         
-        // TODO: 404 not found の時にエラーを出す
         // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
         // 404: {"code":101,"error":"object not found for get"}
         
@@ -119,34 +131,52 @@ namespace zipper
         {
             zipper::ParseObject parse_object;
             picojson::object& object = it_result->get<picojson::object>();
-            for (picojson::object::iterator it = object.begin(); it != object.end(); it++) {
-                if ((*it).second.is<double>()) {
-                    parse_object.set((*it).first, cocos2d::Value((*it).second.get<double>()));
-                } else if ((*it).second.is<std::string>()) {
-                    parse_object.set((*it).first, cocos2d::Value((*it).second.get<std::string>()));
-                } else if ((*it).second.is<bool>()) {
-                    parse_object.set((*it).first, cocos2d::Value((*it).second.get<bool>()));
-                }
-            }
+            ParseClass::parseObject(parse_object, object);
             parse_objects.push_back(parse_object);
         }
         
         return parse_objects;
     }
     
-    bool ParseClass::postData(const std::string objectId, const char* buffer) {
+    /**
+     * return string
+     * {"createdAt":"2015-03-22T06:03:08.905Z","objectId":"8vAojmyYom"}
+     */
+    bool ParseClass::create(const char* buffer, const ccHttpRequestCallback &callback) {
         auto url = string("https://api.parse.com/1/classes/") + class_name;
         auto request = new HttpRequest();
         request->setUrl(url.c_str());
-        request->setHeaders(getParseHeader(true));
+        request->setHeaders(getParseHeader(false));
         request->setRequestType(HttpRequest::Type::POST);
-        HttpClient::getInstance()->send(request);
-        //httpRequest->setResponseCallback();
-        // TODO: これを外から利用する
-        // picojson::object json
-        // picojson::value val(json);
-        // const char* buffer = val.serialize().c_str();
         request->setRequestData(buffer, strlen(buffer));
+        request->setResponseCallback(callback);
+        auto client = HttpClient::getInstance();
+        client->enableCookies("");
+        client->setTimeoutForConnect(10);
+        client->setTimeoutForRead(10);
+        client->send(request);
+        request->release();
+        return true;
+    }
+    
+    /**
+     * 
+     */
+    bool ParseClass::update(const std::string objectId, const char* buffer, const cocos2d::network::ccHttpRequestCallback &callback) {
+        auto url = string("https://api.parse.com/1/classes/") + class_name + "/" + objectId;
+        auto request = new HttpRequest();
+        request->setUrl(url.c_str());
+        request->setHeaders(getParseHeader(true));
+        request->setRequestType(HttpRequest::Type::PUT);
+        request->setResponseCallback(callback);
+        request->setRequestData(buffer, strlen(buffer));
+        
+        auto client = HttpClient::getInstance();
+        client->enableCookies("");
+        client->setTimeoutForConnect(10);
+        client->setTimeoutForRead(10);
+        client->send(request);
+        request->release();
         
         return true;
     }
