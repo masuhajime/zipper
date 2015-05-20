@@ -1,5 +1,4 @@
-#ifndef ZIPPER_PARSEOBJECT_H
-#define ZIPPER_PARSEOBJECT_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -24,4 +23,4 @@ namespace zipper
 
 } // namespace zipper
 
-#endif /* ZIPPER_PARSEOBJECT_H */
+

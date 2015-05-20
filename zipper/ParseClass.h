@@ -1,5 +1,4 @@
-#ifndef ZIPPER_PARSECLASS_H
-#define ZIPPER_PARSECLASS_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -12,6 +11,7 @@
 
 namespace zipper
 {
+    typedef std::vector<ParseObject> ParseObjects;
     /**
      * 一見、Classという命名は抽象的すぎるのでは？と思うかもしれないが、Parse.comではClassというデータ構造のようだ
      */
@@ -46,5 +46,3 @@ namespace zipper
     
 
 } // namespace zipper
-
-#endif /* ZIPPER_PARSECLASS_H */
