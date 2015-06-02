@@ -15,6 +15,7 @@ namespace zipper
     public:
         bool has(const std::string& key);
         const cocos2d::Value* get(const std::string& key);
+        const int asInt(const std::string& key);
         const double asDouble(const std::string& key);
         const std::string asString(const std::string& key);
         const bool asBool(const std::string& key);

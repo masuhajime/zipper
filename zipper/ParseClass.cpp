@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <iostream>
 #include "network/HttpClient.h"
+#include "zipper/Util.h"
 
 using namespace std;
 
@@ -179,6 +180,42 @@ namespace zipper
         request->release();
         
         return true;
+    }
+    
+    void ParseClass::getObjects(const std::string &where, const std::string &sort, const std::string &limit,
+                                const std::function<void(zipper::ParseObjects)> &callbackSucceed,
+                                const std::function<void(ERROR_REASON reason)> &callbackFailed)
+    {
+        auto url = string("https://api.parse.com/1/classes/") + class_name;
+        auto request = new HttpRequest();
+        request->setUrl(url.c_str());
+        request->setHeaders(getParseHeader(true));
+        request->setRequestType(HttpRequest::Type::GET);
+        request->setResponseCallback([](HttpClient* client, HttpResponse* response){
+            if (zipper::Util::isStatus20X(response->getResponseCode())) {
+                callbackFailed(ERROR_REASON::UNEXPECTED_RESPONSE);
+                return;
+            }
+            std::vector<char> *buffer = response->getResponseData();
+            auto jsonBody = std::string(buffer->begin(), buffer->end());
+            picojson::value v;
+            ParseClass::parseJson(v, json_body);
+            // TODO: string から ParseObjectsを得る関数を作るべきやろ？
+        });
+        std::string requestData = "";
+        requestData += "where=" + where;
+        requestData += "sort=" + sort;
+        requestData += "limit=" + limit;
+        
+        // TODO: これurlencodeしてくれんの？
+        request->setRequestData(requestData.c_str(), strlen(requestData.c_str()));
+        
+        auto client = HttpClient::getInstance();
+        client->enableCookies("");
+        client->setTimeoutForConnect(10);
+        client->setTimeoutForRead(10);
+        client->send(request);
+        request->release();
     }
     
 } // namespace zipper

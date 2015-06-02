@@ -25,11 +25,20 @@ namespace zipper
         static void parseJson(picojson::value &out, const std::string &s);
         static void parseObject(ParseObject &parse_object, picojson::object &object);
     public:
+        enum ERROR_REASON : int {
+            INTERNET_NOT_CONNECTED,
+            UNEXPECTED_RESPONSE
+        };
+        
         ParseClass(const std::string class_name, const std::string application_id, const std::string rest_api_key);
         bool update(const std::string objectId, const char* buffer, const cocos2d::network::ccHttpRequestCallback &callback);
         bool create(const char* buffer, const cocos2d::network::ccHttpRequestCallback &callback);
         bool getObjectId(const std::string objectId, const cocos2d::network::ccHttpRequestCallback &callback);
         bool getRanking(std::string sort_by, int limit, const cocos2d::network::ccHttpRequestCallback &callback);
+        
+        void getObjects(const std::string &where, const std::string &sort, const std::string &limit,
+                               const std::function<void(zipper::ParseObjects)> &callbackSucceed,
+                               const std::function<void(ERROR_REASON reason)> &callbackFailed);
         
         // callback
         static ParseObject getParseObjectFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);

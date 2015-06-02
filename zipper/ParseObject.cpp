@@ -17,6 +17,10 @@ namespace zipper
         return &(data.find(key)->second);
     }
     
+    const int ParseObject::asInt(const std::string& key) {
+        return data.find(key)->second.asInt();
+    }
+    
     const double ParseObject::asDouble(const std::string& key) {
         return data.find(key)->second.asDouble();
     }
