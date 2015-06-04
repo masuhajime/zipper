@@ -92,21 +92,12 @@ namespace zipper
         std::vector<char> *buffer = response->getResponseData();
         std::string json_body = std::string(buffer->begin(), buffer->end());
         
-        CCLOG("%d:%s", (int)response->getResponseCode(), json_body.c_str());
+        //CCLOG("%d:%s", (int)response->getResponseCode(), json_body.c_str());
         
-        picojson::value v;
-        ParseClass::parseJson(v, json_body);
-        
-        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
-        // 404: {"code":101,"error":"object not found for get"}
-        
-        zipper::ParseObject parse_object;
-        picojson::object& object = v.get<picojson::object>();
-        ParseClass::parseObject(parse_object, object);
-        return parse_object;
+        return zipper::Parser::parseToParseObject(json_body);
     }
     
-    std::vector<ParseObject> ParseClass::getParseObjectsFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
+    zipper::ParseObjects ParseClass::getParseObjectsFromHttpResponse(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
         if (404 == response->getResponseCode()) {
             throw notfound_error();
         }
@@ -116,27 +107,7 @@ namespace zipper
         std::vector<char> *buffer = response->getResponseData();
         std::string json_body = std::string(buffer->begin(), buffer->end());
         
-        //CCLOG("%s", json_body.c_str());
-        
-        picojson::value v;
-        ParseClass::parseJson(v, json_body);
-        
-        // 200: {"createdAt":"2015-01-03T12:10:01.320Z","name":"user_name","objectId":"G4zrJcNRs8","score":100,"updatedAt":"2015-01-08T09:50:36.141Z"}
-        // 404: {"code":101,"error":"object not found for get"}
-        
-        std::vector<zipper::ParseObject> parse_objects;
-        picojson::object& objects = v.get<picojson::object>();
-        picojson::array& array = objects["results"].get<picojson::array>();
-        
-        for (picojson::array::iterator it_result = array.begin(); it_result != array.end(); it_result++)
-        {
-            zipper::ParseObject parse_object;
-            picojson::object& object = it_result->get<picojson::object>();
-            ParseClass::parseObject(parse_object, object);
-            parse_objects.push_back(parse_object);
-        }
-        
-        return parse_objects;
+        return zipper::Parser::parseToParseObjects(json_body);
     }
     
     /**
@@ -182,30 +153,30 @@ namespace zipper
         return true;
     }
     
-    void ParseClass::getObjects(const std::string &where, const std::string &sort, const std::string &limit,
-                                const std::function<void(zipper::ParseObjects)> &callbackSucceed,
-                                const std::function<void(ERROR_REASON reason)> &callbackFailed)
+    void ParseClass::getObjects(const std::string &where, const std::string &orderby, const std::string &limit,
+                                const std::function<void(zipper::ParseObjects)> callbackSucceed,
+                                const std::function<void(zipper::ParseClass::ERROR_REASON reason)> callbackFailed)
     {
-        auto url = string("https://api.parse.com/1/classes/") + class_name;
+        std::string requestData = "?";
+        requestData += "where=" + Util::urlencode(where);
+        requestData += "&order=" + orderby;
+        requestData += "&limit=" + limit;
+        
+        auto url = string("https://api.parse.com/1/classes/") + class_name + requestData;
         auto request = new HttpRequest();
         request->setUrl(url.c_str());
         request->setHeaders(getParseHeader(true));
         request->setRequestType(HttpRequest::Type::GET);
-        request->setResponseCallback([](HttpClient* client, HttpResponse* response){
-            if (zipper::Util::isStatus20X(response->getResponseCode())) {
+        request->setResponseCallback([=](HttpClient* client, HttpResponse* response){
+            if (!zipper::Util::isStatus20X(response->getResponseCode())) {
                 callbackFailed(ERROR_REASON::UNEXPECTED_RESPONSE);
                 return;
             }
             std::vector<char> *buffer = response->getResponseData();
             auto jsonBody = std::string(buffer->begin(), buffer->end());
-            picojson::value v;
-            ParseClass::parseJson(v, json_body);
-            // TODO: string から ParseObjectsを得る関数を作るべきやろ？
+            auto parseObjects = zipper::Parser::parseToParseObjects(jsonBody);
+            callbackSucceed(parseObjects);
         });
-        std::string requestData = "";
-        requestData += "where=" + where;
-        requestData += "sort=" + sort;
-        requestData += "limit=" + limit;
         
         // TODO: これurlencodeしてくれんの？
         request->setRequestData(requestData.c_str(), strlen(requestData.c_str()));
